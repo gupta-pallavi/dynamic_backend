@@ -10,6 +10,7 @@
 #include <filesystem>
 #include <memory>
 #include "core/common/common.h"
+#include "core/providers/shared_library/provider_api.h"
 #include "core/providers/openvino/ov_interface.h"
 
 namespace onnxruntime {
@@ -26,12 +27,12 @@ class SharedContext : public WeakSingleton<SharedContext> {
   struct SharedWeights {
     struct Header {
       uint32_t bin_version = 1;
-      long footer_offset = 0;
+      uint64_t footer_offset = 0;
     } header_;
     struct Footer {
-      long subgraph_offset;
+      uint64_t subgraph_offset;
       size_t subgraph_length;
-      long metadata_offset;
+      uint64_t metadata_offset;
       size_t metadata_length;
     } footer_;
 
@@ -56,7 +57,7 @@ class SharedContext : public WeakSingleton<SharedContext> {
       using Map = std::unordered_map<Key, Value, Hash>;
       void writeMetadataToBinaryFile(SharedContext& shared_context, const Metadata::Map& metadata);
       void readMetadataFromBinaryFile(SharedContext& shared_context, Metadata::Map& metadata);
-    };
+    } metadata_;
 
     struct SubgraphMetadata {
       struct Key {
@@ -69,7 +70,7 @@ class SharedContext : public WeakSingleton<SharedContext> {
         }
       };
       struct Value {
-        long epctx_offset;
+        uint64_t epctx_offset;
         size_t epctx_length;
       };
       using Map = std::unordered_map<Key, Value, Hash>;
@@ -77,7 +78,7 @@ class SharedContext : public WeakSingleton<SharedContext> {
                                          const SubgraphMetadata::Map& subgraph_metadata);
       void readSubgraphDataFromBinaryFile(SharedContext& shared_context,
                                           SubgraphMetadata::Map& subgraph_metadata);
-    };
+    } subgraph_metadata_;
 
     struct WeightsFile {
       ORT_DISALLOW_COPY_ASSIGNMENT_AND_MOVE(WeightsFile);
@@ -137,9 +138,7 @@ class SharedContext : public WeakSingleton<SharedContext> {
 
     fs::path external_weight_filename;
     std::unique_ptr<WeightsFile> mapped_weights;
-    Metadata metadata_;
     Metadata::Map metadata;
-    SubgraphMetadata subgraph_metadata_;
     SubgraphMetadata::Map subgraph_metadata;
   } shared_weights;
 };
